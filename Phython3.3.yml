@@ -1,0 +1,62 @@
+---
+- name: Install Python 3.8 on Amazon Linux
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Ensure yum is up to date
+      yum:
+        name: "*"
+        state: latest
+
+    - name: Install development tools
+      yum:
+        name:
+          - gcc
+          - openssl-devel
+          - bzip2-devel
+          - libffi-devel
+        state: present
+
+    - name: Download Python 3.8 source
+      get_url:
+        url: https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
+        dest: /tmp/Python-3.8.12.tgz
+
+    - name: Extract Python 3.8 source
+      unarchive:
+        src: /tmp/Python-3.8.12.tgz
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Configure Python 3.8
+      command: ./configure --enable-optimizations
+      args:
+        chdir: /tmp/Python-3.8.12
+
+    - name: Build and install Python 3.8
+      command: make altinstall
+      args:
+        chdir: /tmp/Python-3.8.12
+
+    - name: Ensure pip3 is present
+      pip:
+        name: pip
+        executable: /usr/local/bin/pip3.8
+        state: latest
+
+    - name: Remove the downloaded tarball
+      file:
+        path: /tmp/Python-3.8.12.tgz
+        state: absent
+
+    - name: Remove the extracted source directory
+      command: rm -rf /tmp/Python-3.8.12
+
+    - name: Verify Python 3.8 installation
+      command: /usr/local/bin/python3.8 --version
+      register: python_version
+
+    - name: Print Python 3.8 version
+      debug:
+        msg: "Python version installed: {{ python_version.stdout }}"
